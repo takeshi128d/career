@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>役割の範囲 ― 編集用</title>
+<style>
+  :root{
+    --bg:#faf7f2; --ink:#20201e; --ink2:#57534c; --muted:#8a857b;
+    --acc:#b45a2b; --acc-soft:#f3e4da; --surf:#ffffff; --surf2:#f1ece3;
+    --line:#d8d1c5; --line2:#c4bcae;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;padding:24px;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,"Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;}
+  h1{font-size:20px;margin:0 0 4px;}
+  .sub{color:var(--ink2);font-size:13px;margin:0 0 16px;}
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;}
+  button{font:inherit;border:1px solid var(--line2);background:var(--surf);color:var(--ink);
+    padding:6px 12px;border-radius:8px;cursor:pointer;font-size:13px;}
+  button:hover{background:var(--surf2);}
+  button.primary{background:var(--acc);color:#fff;border-color:var(--acc);}
+  .zone{border-radius:14px;padding:14px 14px 18px;margin-bottom:18px;}
+  .zone.in{background:rgba(180,90,43,0.05);border:1.5px solid var(--acc);}
+  .zone.out{background:rgba(138,133,123,0.07);border:1.5px dashed var(--line2);}
+  .zone-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .zone.in .zone-head b{color:var(--acc);}
+  .zone-head b{font-size:15px;}
+  .zone-head span{color:var(--muted);font-size:12px;}
+  .hub{background:rgba(180,90,43,0.14);border:2.5px solid var(--acc);border-radius:12px;
+    padding:12px 14px;margin-bottom:14px;max-width:560px;margin-left:auto;margin-right:auto;}
+  .hub .col-title{color:var(--acc);font-size:15px;text-align:center;}
+  .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  .col{background:var(--surf);border:1.5px solid var(--line);border-radius:10px;padding:10px;min-height:120px;}
+  .zone.out .cols{grid-template-columns:repeat(3,1fr);}
+  .zone.out .col{border-style:dashed;background:var(--surf);}
+  .col-title{font-weight:700;font-size:13px;margin-bottom:8px;color:var(--acc);
+    display:flex;justify-content:space-between;align-items:center;gap:6px;}
+  .col-title .name{outline:none;}
+  .add{border:none;background:transparent;color:var(--acc);font-size:18px;line-height:1;padding:0 4px;cursor:pointer;}
+  .base{background:var(--surf2);border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:12px;}
+  .base .col-title{color:var(--ink);}
+  .items{display:flex;flex-direction:column;gap:6px;min-height:24px;}
+  .item{background:var(--acc-soft);border:1px solid var(--line);border-radius:8px;
+    padding:6px 26px 6px 10px;font-size:12.5px;position:relative;cursor:grab;}
+  .zone.out .item{background:#eee9e1;}
+  .base .item{background:#eae4d9;}
+  .item[contenteditable]{outline:none;}
+  .item:focus-within{border-color:var(--acc);}
+  .del{position:absolute;top:2px;right:4px;border:none;background:transparent;color:var(--muted);
+    cursor:pointer;font-size:14px;line-height:1;padding:2px;}
+  .del:hover{color:var(--acc);}
+  .col.dragover,.items.dragover{outline:2px dashed var(--acc);outline-offset:2px;}
+  .note{color:var(--muted);font-size:11.5px;margin-top:6px;}
+  dialog{border:1px solid var(--line2);border-radius:12px;max-width:560px;width:90%;padding:16px;}
+  textarea{width:100%;height:260px;font:13px/1.5 monospace;border:1px solid var(--line);border-radius:8px;padding:8px;}
+</style>
+</head>
+<body>
+  <h1>役割の範囲 ― 編集用</h1>
+  <p class="sub">カードはドラッグで移動できます。文字は直接クリックで編集、＋で追加、×で削除。編集内容は自動保存されます（このブラウザ内）。「テキストで書き出し」で議論用にコピーできます。</p>
+  <div class="toolbar">
+    <button class="primary" onclick="exportText()">テキストで書き出し</button>
+    <button onclick="location.reload()">再読み込み</button>
+    <button onclick="resetAll()">初期状態に戻す</button>
+  </div>
+
+  <div class="zone in">
+    <div class="zone-head"><b>■ 範囲内（自分がやる・プライオリティ）</b><span>企画を最優先に</span></div>
+    <div class="hub">
+      <div class="col-title" style="justify-content:center;"><span class="name" contenteditable>企画領域　★最優先</span></div>
+      <div class="items" data-col="hub"></div>
+    </div>
+    <div class="cols">
+      <div class="col"><div class="col-title"><span class="name" contenteditable>新規施策の企画・推進</span><button class="add" title="追加">＋</button></div><div class="items" data-col="a"></div></div>
+      <div class="col"><div class="col-title"><span class="name" contenteditable>クライアント向き合い</span><button class="add" title="追加">＋</button></div><div class="items" data-col="b"></div></div>
+      <div class="col"><div class="col-title"><span class="name" contenteditable>全体の管理・開発連携</span><button class="add" title="追加">＋</button></div><div class="items" data-col="c"></div></div>
+    </div>
+    <div class="base"><div class="col-title"><span class="name" contenteditable>土台 ＝ できる（企画・管理を自走で支える力）</span><button class="add" title="追加">＋</button></div><div class="items" data-col="base"></div></div>
+  </div>
+
+  <div class="zone out">
+    <div class="zone-head"><b>▢ 範囲外（自分はやらない）</b><span>MTGには出て方針は持つが、下記はやらない</span></div>
+    <div class="cols">
+      <div class="col"><div class="col-title"><span class="name" contenteditable>細かい仕様決め</span><button class="add" title="追加">＋</button></div><div class="items" data-col="x1"></div></div>
+      <div class="col"><div class="col-title"><span class="name" contenteditable>テスティング</span><button class="add" title="追加">＋</button></div><div class="items" data-col="x2"></div></div>
+      <div class="col"><div class="col-title"><span class="name" contenteditable>その他 範囲外</span><button class="add" title="追加">＋</button></div><div class="items" data-col="x3"></div></div>
+    </div>
+    <div class="note">※ 開発会社(スパイクスタジオ)とのMTGには出る／実装の詳細詰めとテスティングはPI部に任せる。</div>
+  </div>
+
+  <dialog id="dlg">
+    <p style="margin:0 0 8px;font-size:13px;">下のテキストをコピーして共有・相談に使えます。</p>
+    <textarea id="dump" readonly></textarea>
+    <div style="margin-top:10px;text-align:right;"><button onclick="copyDump()">コピー</button> <button onclick="document.getElementById('dlg').close()">閉じる</button></div>
+  </dialog>
+
+<script>
+const DEFAULT={
+  hub:["企画・意思決定","ロードマップ","上流の要件の方向づけ","アドサーバー方針"],
+  a:["効果測定(ブランドリフト)の立ち上げ","外部広告配信の整備","外部連携・提携","新規施策の技術相談・整理"],
+  b:["代理店・クライアントとの関係・定例","案件の相談対応・判断","仕様に踏み込む提案・逆提案","技術的な実現可否の相談","請求関連の対応（やらざるを得ない）"],
+  c:["購買分析・各種雛形の管理","要件・品質の担保（方針レベル）","開発会社とのMTG参加・連携","開発連携の進行管理"],
+  base:["データ活用（BigQuery / SQL / Python ＋ AI）","業務効率改善（GAS / Python）"],
+  x1:["詳細仕様の詰め"],
+  x2:["品質テストの実行"],
+  x3:["アドサーバーコスト管理"]
+};
+const KEY="nakane_scope_v1";
+let dragEl=null;
+
+function makeItem(text){
+  const d=document.createElement('div');
+  d.className='item'; d.draggable=true;
+  const span=document.createElement('span');
+  span.contentEditable=true; span.textContent=text;
+  span.addEventListener('input',save);
+  const del=document.createElement('button');
+  del.className='del'; del.textContent='×'; del.title='削除';
+  del.onclick=()=>{d.remove();save();};
+  d.appendChild(span); d.appendChild(del);
+  d.addEventListener('dragstart',e=>{dragEl=d;d.style.opacity=.5;});
+  d.addEventListener('dragend',e=>{d.style.opacity=1;dragEl=null;save();});
+  return d;
+}
+function load(){
+  let data=DEFAULT;
+  try{const s=localStorage.getItem(KEY); if(s) data=JSON.parse(s);}catch(e){}
+  document.querySelectorAll('.items').forEach(box=>{
+    box.innerHTML='';
+    (data[box.dataset.col]||[]).forEach(t=>box.appendChild(makeItem(t)));
+  });
+}
+function save(){
+  const data={};
+  document.querySelectorAll('.items').forEach(box=>{
+    data[box.dataset.col]=[...box.querySelectorAll('.item span')].map(s=>s.textContent.trim()).filter(Boolean);
+  });
+  try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){}
+}
+function resetAll(){ try{localStorage.removeItem(KEY);}catch(e){} load(); }
+
+document.querySelectorAll('.add').forEach(btn=>{
+  btn.onclick=()=>{
+    const box=btn.closest('.col,.base,.hub').querySelector('.items');
+    const it=makeItem('新しい項目'); box.appendChild(it);
+    it.querySelector('span').focus(); save();
+  };
+});
+document.querySelectorAll('.items').forEach(box=>{
+  box.addEventListener('dragover',e=>{e.preventDefault();box.classList.add('dragover');});
+  box.addEventListener('dragleave',e=>box.classList.remove('dragover'));
+  box.addEventListener('drop',e=>{e.preventDefault();box.classList.remove('dragover');if(dragEl)box.appendChild(dragEl);save();});
+});
+document.querySelectorAll('.name').forEach(n=>n.addEventListener('input',()=>{}));
+
+function exportText(){
+  const label={hub:"【範囲内】企画領域(最優先)",a:"【範囲内】新規施策の企画・推進",b:"【範囲内】クライアント向き合い",c:"【範囲内】全体の管理・開発連携",base:"【範囲内】土台=できる",x1:"【範囲外】細かい仕様決め",x2:"【範囲外】テスティング",x3:"【範囲外】その他"};
+  let out="■ 役割の範囲 整理\n\n";
+  document.querySelectorAll('.items').forEach(box=>{
+    const items=[...box.querySelectorAll('.item span')].map(s=>s.textContent.trim()).filter(Boolean);
+    if(items.length){out+=(label[box.dataset.col]||box.dataset.col)+"\n"+items.map(t=>"  ・"+t).join("\n")+"\n\n";}
+  });
+  document.getElementById('dump').value=out.trim();
+  document.getElementById('dlg').showModal();
+}
+function copyDump(){const t=document.getElementById('dump');t.select();try{navigator.clipboard.writeText(t.value);}catch(e){document.execCommand('copy');}}
+load();
+</script>
+</body>
+</html>
